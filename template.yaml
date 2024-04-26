@@ -1,0 +1,229 @@
+Transform: AWS::Serverless-2016-10-31
+Resources:
+  Api:
+    Type: AWS::Serverless::Api
+    Properties:
+      Name: !Sub
+        - ${ResourceName} From Stack ${AWS::StackName}
+        - ResourceName: Api
+      StageName: Prod
+      DefinitionBody:
+        openapi: '3.0'
+        info: {}
+        paths:
+          /groups:
+            get:
+              x-amazon-apigateway-integration:
+                httpMethod: POST
+                type: aws_proxy
+                uri: !Sub arn:${AWS::Partition}:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${getgroups.Arn}/invocations
+              responses: {}
+            post:
+              x-amazon-apigateway-integration:
+                httpMethod: POST
+                type: aws_proxy
+                uri: !Sub arn:${AWS::Partition}:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${addgroup.Arn}/invocations
+              responses: {}
+          /groups/{id}:
+            get:
+              x-amazon-apigateway-integration:
+                httpMethod: POST
+                type: aws_proxy
+                uri: !Sub arn:${AWS::Partition}:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${getgroup.Arn}/invocations
+              responses: {}
+            put:
+              x-amazon-apigateway-integration:
+                httpMethod: POST
+                type: aws_proxy
+                uri: !Sub arn:${AWS::Partition}:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${updategroup.Arn}/invocations
+              responses: {}
+            delete:
+              x-amazon-apigateway-integration:
+                httpMethod: POST
+                type: aws_proxy
+                uri: !Sub arn:${AWS::Partition}:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${deletegroup.Arn}/invocations
+              responses: {}
+      EndpointConfiguration: REGIONAL
+      TracingEnabled: true
+      Auth:
+        DefaultAuthorizer: AWS_IAM
+      Cors:
+        MaxAge: 5
+  getgroups:
+    Type: AWS::Serverless::Function
+    Properties:
+      Description: !Sub
+        - Stack ${AWS::StackName} Function ${ResourceName}
+        - ResourceName: getgroups
+      CodeUri: ./
+      Handler: groups.getgroups_handler
+      Runtime: python3.9
+      MemorySize: 3008
+      Timeout: 30
+      Tracing: Active
+      Environment:
+        Variables:
+          GROUPS_TABLE_NAME: !Ref Groups
+          GROUPS_TABLE_ARN: !GetAtt Groups.Arn
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref Groups
+      Events:
+        ApiGETgroups:
+          Type: Api
+          Properties:
+            Path: /groups
+            Method: GET
+            RestApiId: !Ref Api
+  getgroupsLogGroup:
+    Type: AWS::Logs::LogGroup
+    DeletionPolicy: Retain
+    Properties:
+      LogGroupName: !Sub /aws/lambda/${getgroups}
+  getgroup:
+    Type: AWS::Serverless::Function
+    Properties:
+      Description: !Sub
+        - Stack ${AWS::StackName} Function ${ResourceName}
+        - ResourceName: getgroup
+      CodeUri: ./
+      Handler: groups.getgroup_handler
+      Runtime: python3.9
+      MemorySize: 3008
+      Timeout: 30
+      Tracing: Active
+      Environment:
+        Variables:
+          GROUPS_TABLE_NAME: !Ref Groups
+          GROUPS_TABLE_ARN: !GetAtt Groups.Arn
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref Groups
+      Events:
+        ApiGETgroupsid:
+          Type: Api
+          Properties:
+            Path: /groups/{id}
+            Method: GET
+            RestApiId: !Ref Api
+  getgroupLogGroup:
+    Type: AWS::Logs::LogGroup
+    DeletionPolicy: Retain
+    Properties:
+      LogGroupName: !Sub /aws/lambda/${getgroup}
+  updategroup:
+    Type: AWS::Serverless::Function
+    Properties:
+      Description: !Sub
+        - Stack ${AWS::StackName} Function ${ResourceName}
+        - ResourceName: updategroup
+      CodeUri: ./
+      Handler: groups.updategroup_handler
+      Runtime: python3.9
+      MemorySize: 3008
+      Timeout: 30
+      Tracing: Active
+      Environment:
+        Variables:
+          GROUPS_TABLE_NAME: !Ref Groups
+          GROUPS_TABLE_ARN: !GetAtt Groups.Arn
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref Groups
+      Events:
+        ApiPUTgroupsid:
+          Type: Api
+          Properties:
+            Path: /groups/{id}
+            Method: PUT
+            RestApiId: !Ref Api
+  updategroupLogGroup:
+    Type: AWS::Logs::LogGroup
+    DeletionPolicy: Retain
+    Properties:
+      LogGroupName: !Sub /aws/lambda/${updategroup}
+  addgroup:
+    Type: AWS::Serverless::Function
+    Properties:
+      Description: !Sub
+        - Stack ${AWS::StackName} Function ${ResourceName}
+        - ResourceName: addgroup
+      CodeUri: ./
+      Handler: groups.addgroup_handler
+      Runtime: python3.9
+      MemorySize: 3008
+      Timeout: 30
+      Tracing: Active
+      Environment:
+        Variables:
+          GROUPS_TABLE_NAME: !Ref Groups
+          GROUPS_TABLE_ARN: !GetAtt Groups.Arn
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref Groups
+      Events:
+        ApiPOSTgroup:
+          Type: Api
+          Properties:
+            Path: /groups
+            Method: POST
+            RestApiId: !Ref Api
+  addgroupLogGroup:
+    Type: AWS::Logs::LogGroup
+    DeletionPolicy: Retain
+    Properties:
+      LogGroupName: !Sub /aws/lambda/${addgroup}
+  deletegroup:
+    Type: AWS::Serverless::Function
+    Properties:
+      Description: !Sub
+        - Stack ${AWS::StackName} Function ${ResourceName}
+        - ResourceName: deletegroup
+      CodeUri: ./
+      Handler: groups.deletegroup_handler
+      Runtime: python3.9
+      MemorySize: 3008
+      Timeout: 30
+      Tracing: Active
+      Environment:
+        Variables:
+          GROUPS_TABLE_NAME: !Ref Groups
+          GROUPS_TABLE_ARN: !GetAtt Groups.Arn
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref Groups
+      Events:
+        ApiDELETEgroupsid:
+          Type: Api
+          Properties:
+            Path: /groups/{id}
+            Method: DELETE
+            RestApiId: !Ref Api
+  deletegroupLogGroup:
+    Type: AWS::Logs::LogGroup
+    DeletionPolicy: Retain
+    Properties:
+      LogGroupName: !Sub /aws/lambda/${deletegroup}
+  Groups:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: Groups
+      AttributeDefinitions:
+        - AttributeName: id
+          AttributeType: S
+      BillingMode: PAY_PER_REQUEST
+      KeySchema:
+        - AttributeName: id
+          KeyType: HASH
+      StreamSpecification:
+        StreamViewType: NEW_AND_OLD_IMAGES
+Metadata:
+  AWS::Composer::Groups:
+    Group:
+      Label: Api
+      Members:
+        - getgroups
+        - getgroup
+        - updategroup
+        - addgroup
+        - deletegroup
