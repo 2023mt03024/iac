@@ -1,227 +1,472 @@
+# Identifies this template as an AWS SAM template 
 Transform: AWS::Serverless-2016-10-31
+
+# AWS CloudFormation/SAM resources to be created
+# during deploy process
 Resources:
+  # AWS API Gateway logical name.
   Api:
+    # AWS API Gateway
     Type: AWS::Serverless::Api
+    
+    # AWS API Gateway properties
     Properties:
+      # Name of the API gateway prepared using substitution
       Name: !Sub
         - ${ResourceName} From Stack ${AWS::StackName}
         - ResourceName: Api
+      # The name of the stage, which API Gateway uses as the first path segment in the invoke Uniform Resource Identifier (URI).
       StageName: Prod
+      
+      # Defines API
       DefinitionBody:
+        # Follows openapi 3.0 specification
         openapi: '3.0'
+        
+        # Provides meta data about the API
         info: {}
+        
+        # Defines API paths
         paths:
+          # Defines API sub path
           /groups:
+            # GET method
             get:
+              # Defines API Gateway and Lambda integration
               x-amazon-apigateway-integration:
+                # The HTTP method used in the integration request.
+                # For Lambda function invocations, 
+                # the value must be POST.
                 httpMethod: POST
+                # Lambda proxy integration
                 type: aws_proxy
+                # Lambda function uri
                 uri: !Sub arn:${AWS::Partition}:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${getgroups.Arn}/invocations
+              # The list of possible responses as they are
+              # returned from executing this operation
               responses: {}
+            # POST method
             post:
+              # Defines API Gateway and Lambda integration
               x-amazon-apigateway-integration:
+                # The HTTP method used in the integration request.
+                # For Lambda function invocations, 
+                # the value must be POST.
                 httpMethod: POST
+                # Lambda proxy integration
                 type: aws_proxy
+                # Lambda function uri
                 uri: !Sub arn:${AWS::Partition}:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${addgroup.Arn}/invocations
+              # The list of possible responses as they are
+              # returned from executing this operation
               responses: {}
+          # Defines API sub path
           /groups/{id}:
+            # GET method
             get:
+              # Defines API Gateway and Lambda integration
               x-amazon-apigateway-integration:
+                # The HTTP method used in the integration request.
+                # For Lambda function invocations, 
+                # the value must be POST.
                 httpMethod: POST
+                # Lambda proxy integration
                 type: aws_proxy
+                # Lambda function uri
                 uri: !Sub arn:${AWS::Partition}:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${getgroup.Arn}/invocations
+              # The list of possible responses as they are
+              # returned from executing this operation
               responses: {}
+            # PUT method
             put:
+              # Defines API Gateway and Lambda integration
               x-amazon-apigateway-integration:
+                # The HTTP method used in the integration request.
+                # For Lambda function invocations, 
+                # the value must be POST.
                 httpMethod: POST
+                # Lambda proxy integration
                 type: aws_proxy
+                # Lambda function uri
                 uri: !Sub arn:${AWS::Partition}:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${updategroup.Arn}/invocations
+              # The list of possible responses as they are
+              # returned from executing this operation
               responses: {}
+            # DELETE method
             delete:
+              # Defines API Gateway and Lambda integration
               x-amazon-apigateway-integration:
+                # The HTTP method used in the integration request.
+                # For Lambda function invocations, 
+                # the value must be POST.
                 httpMethod: POST
+                # Lambda proxy integration
                 type: aws_proxy
+                # Lambda function uri
                 uri: !Sub arn:${AWS::Partition}:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${deletegroup.Arn}/invocations
+              # The list of possible responses as they are
+              # returned from executing this operation
               responses: {}
+      # The endpoint type of a REST API.
       EndpointConfiguration: REGIONAL
+      # Indicates whether active tracing with X-Ray
+      # is enabled for the stage
       TracingEnabled: true
+      # Configure authorization to control access
+      # to your API Gateway API.
       Auth:
+        # Specify a default authorizer for an API Gateway API
+        # use IAM Permissions
         DefaultAuthorizer: AWS_IAM
+      # Manage Cross-origin resource sharing (CORS) 
+      # for all your API Gateway APIs.        
       Cors:
+        # Number of seconds to cache CORS Preflight request.
         MaxAge: 5
+  # AWS Lambda function logical name        
   getgroups:
+    # AWS Lambda function
     Type: AWS::Serverless::Function
+    # AWS Lambda function properties
     Properties:
+      # AWS Lambda function description prepared using substitution
       Description: !Sub
         - Stack ${AWS::StackName} Function ${ResourceName}
         - ResourceName: getgroups
+      # Specifies code location
       CodeUri: ./
+      # The function within the code that is called to begin execution.
       Handler: groups.getgroups_handler
+      # The identifier of the function's runtime.
       Runtime: python3.9
+      # The size of the memory in MB allocated per invocation of the function.
       MemorySize: 3008
+      # The maximum time in seconds that the function can run before it is stopped.
       Timeout: 30
+      # Specifies the function's X-Ray tracing mode
       Tracing: Active
+      # The configuration for the runtime environment.
       Environment:
+        # Environment variables and their values
         Variables:
+          # DynamoDB table name
           GROUPS_TABLE_NAME: !Ref Groups
+          # DynamoDB table arn
           GROUPS_TABLE_ARN: !GetAtt Groups.Arn
+      # Permission policies for this function
       Policies:
+        # DynamoDB CRUD policy
         - DynamoDBCrudPolicy:
+            # For table Groups
             TableName: !Ref Groups
+      # Specifies the events that trigger this function            
       Events:
+        # Event Identifier
         ApiGETgroups:
+          # Trigger type
           Type: Api
+          # Trigger properties
           Properties:
+            # Path to trigger
             Path: /groups
+            # Method to trigger
             Method: GET
+            # Referred API gateway
             RestApiId: !Ref Api
+  # AWS LogGroup logical name           
   getgroupsLogGroup:
+    # AWS LogGroup
     Type: AWS::Logs::LogGroup
+    # Backup a resource when its stack is deleted
     DeletionPolicy: Retain
+    # LogGroup properties
     Properties:
+      # LogGroup name prepared using substitution
       LogGroupName: !Sub /aws/lambda/${getgroups}
+  # AWS Lambda function logical name      
   getgroup:
+    # AWS Lambda function
     Type: AWS::Serverless::Function
+    # AWS Lambda function properties
     Properties:
+      # AWS Lambda function description prepared using substitution
       Description: !Sub
         - Stack ${AWS::StackName} Function ${ResourceName}
         - ResourceName: getgroup
+      # Specifies code location
       CodeUri: ./
+      # The function within the code that is called to begin execution.
       Handler: groups.getgroup_handler
+      # The identifier of the function's runtime.
       Runtime: python3.9
+      # The size of the memory in MB allocated per invocation of the function.
       MemorySize: 3008
+      # The maximum time in seconds that the function can run before it is stopped.
       Timeout: 30
+      # Specifies the function's X-Ray tracing mode
       Tracing: Active
+      # The configuration for the runtime environment.
       Environment:
+        # Environment variables and their values
         Variables:
+          # DynamoDB table name
           GROUPS_TABLE_NAME: !Ref Groups
+          # DynamoDB table arn
           GROUPS_TABLE_ARN: !GetAtt Groups.Arn
+      # Permission policies for this function
       Policies:
+        # DynamoDB CRUD policy
         - DynamoDBCrudPolicy:
+            # For table Groups
             TableName: !Ref Groups
+      # Specifies the events that trigger this function            
       Events:
+        # Event Identifier
         ApiGETgroupsid:
+          # Trigger type
           Type: Api
+          # Trigger properties
           Properties:
+            # Path to trigger
             Path: /groups/{id}
+            # Method to trigger
             Method: GET
+            # Referred API gateway
             RestApiId: !Ref Api
+  # AWS LogGroup logical name
   getgroupLogGroup:
+    # AWS LogGroup
     Type: AWS::Logs::LogGroup
+    # Backup a resource when its stack is deleted
     DeletionPolicy: Retain
+    # LogGroup properties
     Properties:
+      # LogGroup name prepared using substitution
       LogGroupName: !Sub /aws/lambda/${getgroup}
+  # AWS Lambda function logical name      
   updategroup:
+    # AWS Lambda function
     Type: AWS::Serverless::Function
+    # AWS Lambda function properties
     Properties:
+      # AWS Lambda function description prepared using substitution
       Description: !Sub
         - Stack ${AWS::StackName} Function ${ResourceName}
         - ResourceName: updategroup
+      # Specifies code location
       CodeUri: ./
+      # The function within the code that is called to begin execution.
       Handler: groups.updategroup_handler
+      # The identifier of the function's runtime.
       Runtime: python3.9
+      # The size of the memory in MB allocated per invocation of the function.
       MemorySize: 3008
+      # The maximum time in seconds that the function can run before it is stopped.
       Timeout: 30
+      # Specifies the function's X-Ray tracing mode
       Tracing: Active
+      # The configuration for the runtime environment.
       Environment:
+        # Environment variables and their values
         Variables:
+          # DynamoDB table name
           GROUPS_TABLE_NAME: !Ref Groups
+          # DynamoDB table arn
           GROUPS_TABLE_ARN: !GetAtt Groups.Arn
+      # Permission policies for this function
       Policies:
+        # DynamoDB CRUD policy
         - DynamoDBCrudPolicy:
+            # For table Groups
             TableName: !Ref Groups
+      # Specifies the events that trigger this function            
       Events:
+        # Event Identifier
         ApiPUTgroupsid:
+          # Trigger type
           Type: Api
+          # Trigger properties
           Properties:
+            # Path to trigger
             Path: /groups/{id}
+            # Method to trigger
             Method: PUT
+            # Referred API gateway
             RestApiId: !Ref Api
+  # AWS LogGroup logical name
   updategroupLogGroup:
+    # AWS LogGroup
     Type: AWS::Logs::LogGroup
+    # Backup a resource when its stack is deleted
     DeletionPolicy: Retain
+    # LogGroup properties
     Properties:
+      # LogGroup name prepared using substitution
       LogGroupName: !Sub /aws/lambda/${updategroup}
+  # AWS Lambda function logical name       
   addgroup:
+    # AWS Lambda function
     Type: AWS::Serverless::Function
+    # AWS Lambda function properties
     Properties:
+      # AWS Lambda function description prepared using substitution
       Description: !Sub
         - Stack ${AWS::StackName} Function ${ResourceName}
         - ResourceName: addgroup
+      # Specifies code location
       CodeUri: ./
+      # The function within the code that is called to begin execution.
       Handler: groups.addgroup_handler
+      # The identifier of the function's runtime.
       Runtime: python3.9
+      # The size of the memory in MB allocated per invocation of the function.
       MemorySize: 3008
+      # The maximum time in seconds that the function can run before it is stopped.
       Timeout: 30
+      # Specifies the function's X-Ray tracing mode
       Tracing: Active
+      # The configuration for the runtime environment.
       Environment:
+        # Environment variables and their values
         Variables:
+          # DynamoDB table name
           GROUPS_TABLE_NAME: !Ref Groups
+          # DynamoDB table arn
           GROUPS_TABLE_ARN: !GetAtt Groups.Arn
+      # Permission policies for this function
       Policies:
+        # DynamoDB CRUD policy
         - DynamoDBCrudPolicy:
+            # For table Groups
             TableName: !Ref Groups
+      # Specifies the events that trigger this function            
       Events:
+        # Event Identifier
         ApiPOSTgroup:
+          # Trigger type
           Type: Api
+          # Trigger properties
           Properties:
+            # Path to trigger
             Path: /groups
+            # Method to trigger
             Method: POST
+            # Referred API gateway
             RestApiId: !Ref Api
+  # AWS LogGroup logical name
   addgroupLogGroup:
+    # AWS LogGroup
     Type: AWS::Logs::LogGroup
+    # Backup a resource when its stack is deleted
     DeletionPolicy: Retain
+    # LogGroup properties
     Properties:
+      # LogGroup name prepared using substitution
       LogGroupName: !Sub /aws/lambda/${addgroup}
+  # AWS Lambda function logical name      
   deletegroup:
+    # AWS Lambda function
     Type: AWS::Serverless::Function
+    # AWS Lambda function properties
     Properties:
+      # AWS Lambda function description prepared using substitution
       Description: !Sub
         - Stack ${AWS::StackName} Function ${ResourceName}
         - ResourceName: deletegroup
+      # Specifies code location
       CodeUri: ./
+      # The function within the code that is called to begin execution.
       Handler: groups.deletegroup_handler
+      # The identifier of the function's runtime.
       Runtime: python3.9
+      # The size of the memory in MB allocated per invocation of the function.
       MemorySize: 3008
+      # The maximum time in seconds that the function can run before it is stopped.
       Timeout: 30
+      # Specifies the function's X-Ray tracing mode
       Tracing: Active
+      # The configuration for the runtime environment.
       Environment:
+        # Environment variables and their values
         Variables:
+          # DynamoDB table name
           GROUPS_TABLE_NAME: !Ref Groups
+          # DynamoDB table arn
           GROUPS_TABLE_ARN: !GetAtt Groups.Arn
+      # Permission policies for this function
       Policies:
+        # DynamoDB CRUD policy
         - DynamoDBCrudPolicy:
+            # For table Groups
             TableName: !Ref Groups
+      # Specifies the events that trigger this function            
       Events:
+        # Event Identifier
         ApiDELETEgroupsid:
+          # Trigger type
           Type: Api
+          # Trigger properties
           Properties:
+            # Path to trigger
             Path: /groups/{id}
+            # Method to trigger
             Method: DELETE
+            # Referred API gateway
             RestApiId: !Ref Api
+  # AWS LogGroup logical name
   deletegroupLogGroup:
+    # AWS LogGroup
     Type: AWS::Logs::LogGroup
+    # Backup a resource when its stack is deleted
     DeletionPolicy: Retain
+    # LogGroup properties
     Properties:
+      # LogGroup name prepared using substitution
       LogGroupName: !Sub /aws/lambda/${deletegroup}
+  # AWS DynamoDB Table logical name.      
   Groups:
+    # AWS DynamoDB Table
     Type: AWS::DynamoDB::Table
+    # AWS DynamoDB Table Properties
     Properties:
+      # Table Name
       TableName: Groups
+      # Table attribute definitions
       AttributeDefinitions:
+        # Table attribute name
         - AttributeName: id
+          # Table attribute type
           AttributeType: S
+      # Specify how you are charged for read and
+      # write throughput and how you manage capacity.
       BillingMode: PAY_PER_REQUEST
+      # Specifies the attributes that make up 
+      # the primary key for the table.
       KeySchema:
+        # attribute name
         - AttributeName: id
+          # The role that this key attribute will assume
           KeyType: HASH
+      # The settings for the DynamoDB table stream,
+      # which capture changes to items stored in the table.
       StreamSpecification:
+        # When an item in the table is modified, StreamViewType 
+        # determines what information is written to the stream
+        # for this table.
+        # Both the new and the old item images of the item are
+        # written to the stream.
         StreamViewType: NEW_AND_OLD_IMAGES
+# SAM template meta data
 Metadata:
+  # Composer Groups
   AWS::Composer::Groups:
+    # Group
     Group:
+      # Group label name
       Label: Api
+      # Group members
       Members:
+        # Lambda functions that are part of group
         - getgroups
         - getgroup
         - updategroup
